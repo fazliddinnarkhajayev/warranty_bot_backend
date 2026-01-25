@@ -1,19 +1,23 @@
 import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { UserRole } from 'src/shared/enums/user-roles.enum';
 
-export class CreateUserDto {
+export class CreateSellerDto {
 
   @IsString()
   @IsNotEmpty()
-  username: string;
+  company: string;
 
   @IsString()
   @IsNotEmpty()
   phone: string;
 
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  password: string;
+  district_id: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  region_id: number;
 
   @IsString()
   @IsNotEmpty()
@@ -22,7 +26,4 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   last_name: string;
-
-  @IsEnum(UserRole)
-  role: UserRole;
 }
