@@ -18,6 +18,10 @@ export class UsersRepository {
     return this.knex.getClient()(this.table).where({ id }).first();
   }
 
+  async findByPhone(phone: string) {
+    return this.knex.getClient()(this.table).where({ phone }).first();
+  }
+
   async create(data: Partial<{ name: string; role: string; created_by: number }>) {
     const [user] = await this.knex.getClient()(this.table)
       .insert(data)

@@ -18,6 +18,11 @@ export class UsersService {
     return user;
   }
 
+  async getByPhone(phone: string) {
+    const user = await this.repo.findByPhone(phone);
+    return user;
+  }
+
   async getAll(query: PaginationQueryDto) {
 
     const { pageIndex = 1, pageSize = 10 } = query;

@@ -7,6 +7,7 @@ import { SellersModule } from './modules/sellers/sellers.module';
 import { ProductsModule } from './modules/products/products.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { DistrictsModule } from './modules/districts/districts.module';
+import { TelegramModule } from './modules/telegram/telegram.module';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { DistrictsModule } from './modules/districts/districts.module';
     SellersModule,
     ProductsModule,
     RegionsModule,
-    DistrictsModule
+    DistrictsModule,
+    TelegramModule
   ],
   controllers: [AppController],
   providers: [AppService],
