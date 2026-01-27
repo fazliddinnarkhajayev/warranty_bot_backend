@@ -5,6 +5,7 @@ export async function up(knex: Knex): Promise<void> {
     table.increments('id');
     table.string('name').notNullable();
     table.string('username').notNullable();
+    table.integer('telegram_id').notNullable();
     table.string('phone').notNullable();
     table.string('password').notNullable();
     table.string('first_name').notNullable();
@@ -12,7 +13,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('role').notNullable();
     table.integer('created_by').nullable().unsigned().references('id').inTable('users').onDelete('SET NULL');
     table.timestamp('created_at').defaultTo(knex.fn.now());
-    table.unique(['username']);
+    table.unique(['username', 'telegram_id', 'phone']);
   });
 }
 

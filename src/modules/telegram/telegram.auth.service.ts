@@ -14,4 +14,8 @@ export class TelegramAuthService {
 
     return { success: true, user };
   }
+
+  getUserBytelegramId(telegramId: string) {
+    return this.usersService.getByTelegramId(telegramId);
+  }
 }

@@ -5,8 +5,7 @@ import { ProductsRepository } from './products.repository';
 
 @Injectable()
 export class ProductsService {
-
-  constructor(private readonly repo: ProductsRepository) { }
+  constructor(private readonly repo: ProductsRepository) {}
 
   async create(dto: CreateProductDto) {
     return this.repo.create(dto);
@@ -18,8 +17,11 @@ export class ProductsService {
     return data;
   }
 
-  async getAll(query: PaginationQueryDto) {
+  async getByCode(code: string) {
+    return await this.repo.findByCode(code);
+  }
 
+  async getAll(query: PaginationQueryDto) {
     const { pageIndex = 1, pageSize = 10 } = query;
 
     const offset = (pageIndex - 1) * pageSize;

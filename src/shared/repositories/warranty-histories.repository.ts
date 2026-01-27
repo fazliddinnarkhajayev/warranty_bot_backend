@@ -2,10 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { KnexService } from 'src/database/knex.service';
 
 @Injectable()
-export class UsersRepository {
+export class WarrantyHistoriesRepository {
   constructor(private readonly knex: KnexService) {}
 
-  private table = 'users';
+  private table = 'warranty_histories';
 
   async findAll(offset: number, limit: number) {
     return this.knex
@@ -15,24 +15,27 @@ export class UsersRepository {
       .limit(limit);
   }
 
+  async findHistoriesBySellerId(seller_id: number) {
+    return this.knex
+      .getClient()(this.table)
+      .select(
+        'products.code as product_code',
+        'warranty_histories.phone',
+        'warranty_histories.activated_at',
+      )
+      .leftJoin('products', 'warranty_histories.product_id', 'products.id')
+      .where({ 'warranty_histories.seller_id': seller_id });
+  }
+
   async findById(id: number) {
     return this.knex.getClient()(this.table).where({ id }).first();
   }
 
-  async findByPhone(phone: string) {
-    return this.knex.getClient()(this.table).where({ phone }).first();
+  async findByProductId(id: number) {
+    return this.knex.getClient()(this.table).where({ product_id: id }).first();
   }
 
-  async findByTelegramId(telegramId: string) {
-    return this.knex
-      .getClient()(this.table)
-      .where({ telegram_id: telegramId })
-      .first();
-  }
-
-  async create(
-    data: Partial<{ name: string; role: string; created_by: number }>,
-  ) {
+  async create(data: any) {
     const [user] = await this.knex
       .getClient()(this.table)
       .insert(data)

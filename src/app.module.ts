@@ -8,6 +8,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { DistrictsModule } from './modules/districts/districts.module';
 import { TelegramModule } from './modules/telegram/telegram.module';
+import { WarrantyHistoriesRepository } from './shared/repositories/warranty-histories.repository';
 
 @Module({
   imports: [
@@ -20,6 +21,6 @@ import { TelegramModule } from './modules/telegram/telegram.module';
     TelegramModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, WarrantyHistoriesRepository],
 })
 export class AppModule { }
