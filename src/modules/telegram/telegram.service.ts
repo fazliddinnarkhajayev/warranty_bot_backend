@@ -22,72 +22,80 @@ export class TelegramService implements OnModuleInit {
   private readonly warrantyHistoriesRepository: WarrantyHistoriesRepository;
 
   async onModuleInit() {
-    this.bot = new Bot('8442054593:AAFs7SI4aGCmYO1tTFJLt06jf0QmjGv8Mjc');
+    this.initBot()
+  }
 
-    this.bot.use(
-      session({
-        initial: () => ({ user: null, warrantyStep: null, warrantyData: null }),
-      }),
-    );
+  async initBot() {
+    try {
+      this.bot = new Bot('8442054593:AAFs7SI4aGCmYO1tTFJLt06jf0QmjGv8Mjc');
 
-    this.bot.use(async (ctx, next) => {
-      const telegramId = ctx.from?.id?.toString();
-      if (!telegramId) return next();
+      this.bot.use(
+        session({
+          initial: () => ({ user: null, warrantyStep: null, warrantyData: null }),
+        }),
+      );
 
-      const user =
-        await this.telegramAuthService.getUserBytelegramId(telegramId);
-      if (user) ctx['session'].user = user;
+      this.bot.use(async (ctx, next) => {
+        const telegramId = ctx.from?.id?.toString();
+        if (!telegramId) return next();
 
-      await next();
-    });
+        const user =
+          await this.telegramAuthService.getUserBytelegramId(telegramId);
+        if (user) ctx['session'].user = user;
 
-    this.bot.use(async (ctx, next) => {
-      const isStart = ctx.message?.text === '/start';
-      const isContact = Boolean(ctx.message?.contact);
+        await next();
+      });
 
-      if (!ctx['session'].user) {
-        if (isStart || isContact) {
-          return next(); // login qilishga ruxsat
+      this.bot.use(async (ctx, next) => {
+        const isStart = ctx.message?.text === '/start';
+        const isContact = Boolean(ctx.message?.contact);
+
+        if (!ctx['session'].user) {
+          if (isStart || isContact) {
+            return next(); // login qilishga ruxsat
+          }
+
+          await ctx.reply('📱 Iltimos telefon raqamingizni yuboring');
+          return;
         }
 
-        await ctx.reply('📱 Iltimos telefon raqamingizni yuboring');
-        return;
-      }
+        await next();
+      });
 
-      await next();
-    });
+      // -------------------- START COMMAND --------------------
+      this.bot.command('start', (ctx) => this.handleStart(ctx));
 
-    // -------------------- START COMMAND --------------------
-    this.bot.command('start', (ctx) => this.handleStart(ctx));
+      // -------------------- CONTACT HANDLER --------------------
+      this.bot.on('message:contact', (ctx) => this.handleContact(ctx));
 
-    // -------------------- CONTACT HANDLER --------------------
-    this.bot.on('message:contact', (ctx) => this.handleContact(ctx));
+      // -------------------- MESSAGE HANDLER (steps) --------------------
+      this.bot.on('message', async (ctx) => {
+        const step = ctx['session'].warrantyStep;
+        if (!step) return;
 
-    // -------------------- MESSAGE HANDLER (steps) --------------------
-    this.bot.on('message', async (ctx) => {
-      const step = ctx['session'].warrantyStep;
-      if (!step) return;
+        switch (step) {
+          case 'phone':
+            await this.handlePhoneStep(ctx);
+            break;
+          case 'product_code':
+            await this.handleProductCodeStep(ctx);
+            break;
+          case 'confirm':
+            await this.handleConfirmStep(ctx);
+            break;
+          default:
+            break;
+        }
+      });
 
-      switch (step) {
-        case 'phone':
-          await this.handlePhoneStep(ctx);
-          break;
-        case 'product_code':
-          await this.handleProductCodeStep(ctx);
-          break;
-        case 'confirm':
-          await this.handleConfirmStep(ctx);
-          break;
-        default:
-          break;
-      }
-    });
+      // -------------------- CALLBACK QUERY HANDLER --------------------
+      this.bot.on('callback_query:data', (ctx) => this.handleCallback(ctx));
 
-    // -------------------- CALLBACK QUERY HANDLER --------------------
-    this.bot.on('callback_query:data', (ctx) => this.handleCallback(ctx));
-
-    await this.bot.start();
-    console.log('🤖 Telegram bot ishga tushdi');
+      await this.bot.start();
+      console.log('🤖 Telegram bot ishga tushdi');
+    } catch (err: any) {
+      console.log('Error while starting bot', err)
+    }
   }
 
   // -------------------- START --------------------

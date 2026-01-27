@@ -11,8 +11,10 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
 
-    // 🔥 Global prefix
-    app.setGlobalPrefix('api/v1');
+  app.enableCors('*')
+
+  // 🔥 Global prefix
+  app.setGlobalPrefix('api/v1');
 
   await app.listen(process.env.PORT ?? 3000);
 }
