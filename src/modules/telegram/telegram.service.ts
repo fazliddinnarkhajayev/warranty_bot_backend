@@ -38,7 +38,7 @@ export class TelegramService implements OnModuleInit {
       this.bot.use(async (ctx, next) => {
         const telegramId = ctx.from?.id?.toString();
         if (!telegramId) return next();
-
+console.log('Telegram ID:', telegramId);
         const user =
           await this.telegramAuthService.getUserBytelegramId(telegramId);
         if (user) ctx['session'].user = user;
@@ -122,8 +122,14 @@ export class TelegramService implements OnModuleInit {
         return;
       }
 
+      await this.telegramAuthService.setTelegramId(
+        res.user.id,
+        ctx.message.contact.user_id.toString(),
+        res.user.role,
+      );
+
       ctx.session.user = res.user;
-      await ctx.reply(`Xush kelibsiz, ${res.user.first_name}`);
+      await ctx.reply(`Xush kelibsiz, ${res.user.first_name} ${res.user.last_name}!`);
       this.showMenu(ctx, res.user.role);
     } catch (err) {
       console.log('Contact error: ', err);
@@ -279,10 +285,17 @@ export class TelegramService implements OnModuleInit {
   private async getSellerWarrantyHistory(sellerId: number): Promise<string> {
     const histories =
       await this.warrantyHistoriesRepository.findHistoriesBySellerId(sellerId);
-    histories.map((history) => {
-      return `Mahsulot kodi: ${history.product_code}; Haridor telefon raqami: ${history.phone}, Aktivlashtirgan sana: ${history.activated_at}`;
+    const str = histories.map((history) => {
+      return `\nMahsulot kodi: ${history.product_code}; \nHaridor telefon raqami: ${history.phone}; \nStatus: ${history.status}; \nAriza yaratilgan sana: ${this.formatDate(history.created_at)}; ${history.activated_at ? `\nAktivlashtirgan sana: ${history.activated_at};` : ''} \n---------------------`;
     });
+    return str.join('\n');
+  }
 
-    return histories.join('\n');
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   }
 }

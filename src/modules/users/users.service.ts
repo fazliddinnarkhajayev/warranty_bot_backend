@@ -23,11 +23,6 @@ export class UsersService {
     return user;
   }
 
-  async getByTelegramId(telegramId: string) {
-    const user = await this.repo.findByPhone(telegramId);
-    return user;
-  }
-
   async getAll(query: PaginationQueryDto) {
 
     const { pageIndex = 1, pageSize = 10 } = query;
