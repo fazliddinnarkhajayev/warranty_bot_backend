@@ -15,6 +15,13 @@ export class CustomersRepository {
       .limit(limit);
   }
 
+  async findCreated() {
+    return this.knex
+      .getClient()(this.table)
+      .select('*')
+      .where({ status: 'CREATED' })
+  }
+
   async findById(id: number) {
     return this.knex.getClient()(this.table).where({ id }).first();
   }
@@ -23,6 +30,17 @@ export class CustomersRepository {
     return this.knex.getClient()(this.table).where({ phone }).first();
   }
 
+  async findByTelegramId(telegram_id: string) {
+    return this.knex.getClient()(this.table).where({ telegram_id }).first();
+  }
+
+  async setTelegramId(id, telegram_id) {
+    return this.knex
+      .getClient()(this.table)
+      .where({ id })
+      .update({ telegram_id })
+      .returning('*');
+  }
 
   async findByProductId(id: number) {
     return this.knex.getClient()(this.table).where({ product_id: id }).first();

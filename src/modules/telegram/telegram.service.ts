@@ -5,14 +5,7 @@ import { UsersService } from '../users/users.service';
 import { ProductsService } from '../products/products.service';
 import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-histories.repository';
 import { CustomersRepository } from 'src/shared/repositories/customers.repository';
-import { Keyboard } from "grammy";
 
-// Asosiy menyu
-export const mainMenu = new Keyboard()
-  .text("📦 Buyurtmalar").text("👤 Profil")
-  .row()
-  .text("📞 Aloqa").text("⚙️ Sozlamalar")
-  .resized();
 @Injectable()
 export class TelegramService implements OnModuleInit {
   bot: Bot;
@@ -53,14 +46,13 @@ export class TelegramService implements OnModuleInit {
         const user =
           await this.telegramAuthService.getUserBytelegramId(telegramId);
         if (user) ctx['session'].user = user;
-        console.log({ user })
+        console.log({ location: 'mid', user })
         await next();
       });
 
       this.bot.use(async (ctx, next) => {
         const isStart = ctx.message?.text === '/start';
         const isContact = Boolean(ctx.message?.contact);
-
         if (!ctx['session'].user) {
           if (isStart || isContact) {
             return next(); // login qilishga ruxsat
@@ -69,12 +61,22 @@ export class TelegramService implements OnModuleInit {
           await ctx.reply('📱 Iltimos telefon raqamingizni yuboring');
           return;
         }
-
+        await this.bot.api.setMyCommands([
+          { command: "menu", description: "Menu" },
+        ]);
         await next();
       });
 
       // -------------------- START COMMAND --------------------
       this.bot.command('start', (ctx) => this.handleStart(ctx));
+
+      // ------------------- MENU COMMAND -----------------------
+      this.bot.command('menu', async (ctx) => {
+        if (!ctx['session'].user) {
+          this.handleStart(ctx)
+        }
+        await this.showMenu(ctx, ctx['session'].user.role);
+      });
 
       // -------------------- CONTACT HANDLER --------------------
       this.bot.on('message:contact', (ctx) => this.handleContact(ctx));
@@ -82,7 +84,6 @@ export class TelegramService implements OnModuleInit {
       // -------------------- MESSAGE HANDLER (steps) --------------------
       this.bot.on('message', async (ctx) => {
         const step = ctx['session'].warrantyStep;
-        console.log({ step })
         if (!step) return;
         switch (step) {
           case 'phone':
@@ -160,10 +161,40 @@ export class TelegramService implements OnModuleInit {
             .row()
             .text('ℹ️ Ma’lumot', 'seller_info'),
         });
+      case 'customer':
+        ctx.reply('📋 Haridor menyusi', {
+          reply_markup: new InlineKeyboard()
+            .text('🟢 Kafolatni aktivlashtrish', 'customer_warranty_activation')
+            .row()
+            .text('📦 Kafolatlar tarixi', 'customer_warranty_history')
+            .row()
+            .text('ℹ️ Ma’lumot', 'customer_info'),
+        });
         break;
       default:
         ctx.reply('❌ Sizning rolingiz aniqlanmadi');
         break;
+    }
+  }
+
+  private async showCustomerWarrantiesToActivate(ctx: any, phone: string) {
+
+    const createdProducts = await this.warrantyHistoriesRepository.findCreatedByPhone(phone);
+
+    if (!createdProducts.length) {
+      ctx.reply('Aktivlashtrish uchun mahsulot topilmadi')
+    } else {
+      const productsMenu = new InlineKeyboard();
+
+      // Dynamic menu uchun loop
+      for (const item of createdProducts) {
+        // item.name va item.id ni o'zing yaratgan product obyektiga qarab o'zgartir
+        productsMenu.text(`📦 Mahsulot kodi: ${item.product_code}`, `product_to_activate_#${item.id}`).row();
+      }
+      ctx.reply('📋 Aktivlashtrish uchun mahsulotni tanlang', {
+        reply_markup: productsMenu
+      });
+
     }
   }
 
@@ -172,36 +203,68 @@ export class TelegramService implements OnModuleInit {
     const data = ctx.callbackQuery.data;
     const user_role = ctx.session.user.role;
 
-    switch (data) {
-      case 'seller_warranty_create':
-        await ctx.answerCallbackQuery({
-          text: 'Kafolatni yaratasiz!',
-        });
-        await ctx.reply('📲 Iltimos, mijoz telefon raqamini kiriting:');
-        console.log('ctx.session.warrantyStep', ctx.session.warrantyStep)
-        ctx.session.warrantyStep = 'phone';
-        console.log(ctx.session.warrantyStep)
-        break;
+    if (data.split('_#').length == 1) {
 
-      case 'seller_warranty_history':
-        await ctx.answerCallbackQuery({ text: 'Kafolatlar tarixi' });
-        const history = await this.getSellerWarrantyHistory(
-          ctx.session.user.id,
-        );
-        await ctx.reply(`📦 Sizning kafolatlar tarixingiz:\n${history}`);
-        break;
+      switch (data) {
+        case 'seller_warranty_create':
+          await ctx.answerCallbackQuery({
+            text: 'Kafolatni yaratasiz!',
+          });
+          await ctx.reply('📲 Iltimos, mijoz telefon raqamini kiriting:');
+          ctx.session.warrantyStep = 'phone';
+          break;
 
-      case 'seller_info':
-        await ctx.answerCallbackQuery({ text: 'Sotuvchi haqida' });
-        await ctx.reply(
-          `ℹ️ Siz ${ctx.session.user.first_name} ${ctx.session.user.last_name} ${user_role == 'seller' ? 'sotuvchi' : 'foydalanuvchi'} sifatida tizimda ro‘yxatdan o‘tgan foydalanuvchisiz.`,
-        );
-        break;
+        case 'customer_warranty_activation':
+          await ctx.answerCallbackQuery({
+            text: 'Kafolatni aktivlashtirasiz!',
+          });
+          await this.showCustomerWarrantiesToActivate(ctx, ctx.session.user.phone);
+          ctx.session.warrantyStep = 'customer_warranty_activation';
+          break;
 
-      default:
-        await ctx.answerCallbackQuery({ text: '❌ Noma’lum amal' });
-        break;
+        case 'seller_warranty_history':
+          await ctx.answerCallbackQuery({ text: 'Kafolatlar tarixi' });
+          const history = await this.getSellerWarrantyHistory(
+            ctx.session.user.id,
+          );
+          await ctx.reply(`📦 Sizning kafolatlar tarixingiz:\n${history}`);
+          break;
+
+        case 'customer_warranty_history':
+          await ctx.answerCallbackQuery({ text: 'Kafolatlar tarixi' });
+          const customer_history = await this.getCustomerWarrantyHistory(
+            ctx.session.user.phone,
+          );
+          await ctx.reply(`📦 Sizning kafolatlar tarixingiz:\n${customer_history}`);
+          break;
+
+
+        case 'seller_info':
+          await ctx.answerCallbackQuery({ text: 'Sotuvchi haqida' });
+          await ctx.reply(
+            `ℹ️ Siz ${ctx.session.user.first_name} ${ctx.session.user.last_name} ${user_role == 'seller' ? 'sotuvchi' : 'foydalanuvchi'} sifatida tizimda ro‘yxatdan o‘tgan foydalanuvchisiz.`,
+          );
+          break;
+
+        case 'customer_info':
+          await ctx.answerCallbackQuery({ text: 'Haridor haqida' });
+          await ctx.reply(
+            `ℹ️ Siz ${ctx.session.user.first_name} ${ctx.session.user.last_name} ${user_role == 'seller' ? 'sotuvchi' : user_role == 'customer' ? 'Haridor' : 'foydalanuvchi'} sifatida tizimda ro‘yxatdan o‘tgan foydalanuvchisiz.`,
+          );
+          break;
+
+        default:
+          await ctx.answerCallbackQuery({ text: '❌ Noma’lum amal' });
+          break;
+      }
+    } else {
+      if (data.startsWith('product')) {
+        const warranty_history_id = data.split('_#')[1];
+        await this.warrantyHistoriesRepository.update(warranty_history_id, { status: 'ACTIVATED', activated_at: new Date() })
+        await ctx.reply('Kafolat muvaffaqiyatli aktivlashtirildi !');
+      }
     }
+
   }
 
   // -------------------- PHONE STEP --------------------
@@ -307,7 +370,16 @@ export class TelegramService implements OnModuleInit {
     const histories =
       await this.warrantyHistoriesRepository.findHistoriesBySellerId(sellerId);
     const str = histories.map((history) => {
-      return `\nMahsulot kodi: ${history.product_code}; \nHaridor telefon raqami: ${history.phone}; \nStatus: ${history.status}; \nAriza yaratilgan sana: ${this.formatDate(history.created_at)}; ${history.activated_at ? `\nAktivlashtirgan sana: ${history.activated_at};` : ''}`;
+      return `\nMahsulot kodi: ${history.product_code}; \nHaridor telefon raqami: ${history.phone}; \nStatus: ${history.status}; \nAriza yaratilgan sana: ${this.formatDate(history.created_at)}; ${history.activated_at ? `\nAktivlashtirgan sana: ${this.formatDate(history.activated_at)};` : ''} \n---------------------`;
+    });
+    return str.join('\n');
+  }
+
+  private async getCustomerWarrantyHistory(phone: string): Promise<string> {
+    const histories =
+      await this.warrantyHistoriesRepository.findHistoriesByCustomerPhone(phone);
+    const str = histories.map((history) => {
+      return `\nMahsulot kodi: ${history.product_code}; \nHaridor telefon raqami: ${history.phone}; \nStatus: ${history.status}; \nAriza yaratilgan sana: ${this.formatDate(history.created_at)}; ${history.activated_at ? `\nAktivlashtirgan sana: ${this.formatDate(history.activated_at)};` : ''} \n---------------------`;
     });
     return str.join('\n');
   }

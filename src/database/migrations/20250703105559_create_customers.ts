@@ -6,6 +6,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('phone').nullable();
     table.string('first_name').nullable();
     table.string('last_name').nullable();
+    table.string('telegram_id').nullable();
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('last_login').nullable();
   });

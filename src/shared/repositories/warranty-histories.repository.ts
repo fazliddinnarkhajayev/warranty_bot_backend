@@ -3,7 +3,7 @@ import { KnexService } from 'src/database/knex.service';
 
 @Injectable()
 export class WarrantyHistoriesRepository {
-  constructor(private readonly knex: KnexService) {}
+  constructor(private readonly knex: KnexService) { }
 
   private table = 'warranty_histories';
 
@@ -25,10 +25,41 @@ export class WarrantyHistoriesRepository {
         'warranty_histories.status',
         'warranty_histories.created_at',
         'warranty_histories.id',
-        'warranty_histories.activated_at',
       )
       .leftJoin('products', 'warranty_histories.product_id', 'products.id')
       .where({ 'warranty_histories.seller_id': seller_id });
+  }
+
+  async findHistoriesByCustomerPhone(phone: string) {
+    return this.knex
+      .getClient()(this.table)
+      .select(
+        'products.code as product_code',
+        'warranty_histories.phone',
+        'warranty_histories.activated_at',
+        'warranty_histories.status',
+        'warranty_histories.created_at',
+        'warranty_histories.id',
+      )
+      .leftJoin('products', 'warranty_histories.product_id', 'products.id')
+      .where({ 'warranty_histories.phone': phone });
+  }
+
+  async findCreatedByPhone(phone: string) {
+    return this.knex
+      .getClient()(this.table)
+      .select(
+        'products.code as product_code',
+        'warranty_histories.phone',
+        'warranty_histories.activated_at',
+        'warranty_histories.status',
+        'warranty_histories.created_at',
+        'warranty_histories.id',
+        'warranty_histories.activated_at',
+      )
+      .leftJoin('products', 'warranty_histories.product_id', 'products.id')
+      .where({ 'warranty_histories.phone': phone })
+      .andWhere({ 'warranty_histories.status': 'CREATED' });
   }
 
   async findById(id: number) {
@@ -60,7 +91,7 @@ export class WarrantyHistoriesRepository {
     return this.knex.getClient()(this.table).count('* as count');
   }
 
-  async update(id: number, data: { name?: string }) {
+  async update(id: number, data: any) {
     const [res] = await this.knex
       .getClient()(this.table)
       .where({ id })
