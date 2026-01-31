@@ -5,7 +5,14 @@ import { UsersService } from '../users/users.service';
 import { ProductsService } from '../products/products.service';
 import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-histories.repository';
 import { CustomersRepository } from 'src/shared/repositories/customers.repository';
+import { Keyboard } from "grammy";
 
+// Asosiy menyu
+export const mainMenu = new Keyboard()
+  .text("📦 Buyurtmalar").text("👤 Profil")
+  .row()
+  .text("📞 Aloqa").text("⚙️ Sozlamalar")
+  .resized();
 @Injectable()
 export class TelegramService implements OnModuleInit {
   bot: Bot;
@@ -46,7 +53,7 @@ export class TelegramService implements OnModuleInit {
         const user =
           await this.telegramAuthService.getUserBytelegramId(telegramId);
         if (user) ctx['session'].user = user;
-
+        console.log({ user })
         await next();
       });
 
@@ -75,8 +82,8 @@ export class TelegramService implements OnModuleInit {
       // -------------------- MESSAGE HANDLER (steps) --------------------
       this.bot.on('message', async (ctx) => {
         const step = ctx['session'].warrantyStep;
+        console.log({ step })
         if (!step) return;
-
         switch (step) {
           case 'phone':
             await this.handlePhoneStep(ctx);
@@ -126,8 +133,14 @@ export class TelegramService implements OnModuleInit {
         return;
       }
 
+      await this.telegramAuthService.setTelegramId(
+        res.user.id,
+        ctx.message.contact.user_id.toString(),
+        res.user.role,
+      );
+
       ctx.session.user = res.user;
-      await ctx.reply(`Xush kelibsiz, ${res.user.first_name}`);
+      await ctx.reply(`Xush kelibsiz, ${res.user.first_name} ${res.user.last_name}!`);
       this.showMenu(ctx, res.user.role);
     } catch (err) {
       console.log('Contact error: ', err);
@@ -141,7 +154,7 @@ export class TelegramService implements OnModuleInit {
       case 'seller':
         ctx.reply('📋 Sotuvchi menyusi', {
           reply_markup: new InlineKeyboard()
-            .text('🟢 Kafolatni yoqish', 'seller_warranty_activate')
+            .text('🟢 Kafolatni yoqish', 'seller_warranty_create')
             .row()
             .text('📦 Kafolatlar tarixi', 'seller_warranty_history')
             .row()
@@ -160,12 +173,14 @@ export class TelegramService implements OnModuleInit {
     const user_role = ctx.session.user.role;
 
     switch (data) {
-      case 'seller_warranty_activate':
+      case 'seller_warranty_create':
         await ctx.answerCallbackQuery({
-          text: 'Kafolatni aktivatsiya qilasiz!',
+          text: 'Kafolatni yaratasiz!',
         });
         await ctx.reply('📲 Iltimos, mijoz telefon raqamini kiriting:');
+        console.log('ctx.session.warrantyStep', ctx.session.warrantyStep)
         ctx.session.warrantyStep = 'phone';
+        console.log(ctx.session.warrantyStep)
         break;
 
       case 'seller_warranty_history':
@@ -193,7 +208,7 @@ export class TelegramService implements OnModuleInit {
   private async handlePhoneStep(ctx: any) {
     let phone = ctx.message?.text?.toString().trim() || '';
     phone = phone.replace(/\D/g, '');
-
+    console.log(phone)
     if (!this.isValidUzbekPhone(phone)) {
       await ctx.reply(
         '❌ Telefon raqam noto‘g‘ri. Faqat O‘zbek raqami (+998XXXXXXXXX) qabul qilinadi.',
@@ -228,13 +243,13 @@ export class TelegramService implements OnModuleInit {
     const answer = ctx.message?.text?.toString().trim().toLowerCase();
     if (answer === 'ha') {
       await this.createCustomerIfNotExists(ctx.session.warrantyData);
-      await this.activateWarranty(
+      await this.createWarranty(
         ctx.session.warrantyData,
         ctx.session.user.id,
       );
-      await ctx.reply('🟢 Kafolat muvaffaqiyatli aktivatsiya qilindi!');
+      await ctx.reply('🟢 Kafolat muvaffaqiyatli yaratildi!');
     } else if (answer === "yo'q" || answer === 'yo‘q' || answer === 'yoq') {
-      await ctx.reply('❌ Kafolat aktivatsiyasi bekor qilindi.');
+      await ctx.reply('❌ Kafolat yaratish bekor qilindi.');
     } else {
       return await ctx.reply(`✅ Tasdiqlaysizmi? (ha/yo‘q)`);
     }
@@ -267,8 +282,8 @@ export class TelegramService implements OnModuleInit {
     return true;
   }
 
-  // -------------------- ACTIVATE WARRANTY --------------------
-  private async activateWarranty(
+  // -------------------- CREATE WARRANTY --------------------
+  private async createWarranty(
     data: { phone: string; productCode: string },
     sellerId: number,
   ) {
@@ -291,10 +306,17 @@ export class TelegramService implements OnModuleInit {
   private async getSellerWarrantyHistory(sellerId: number): Promise<string> {
     const histories =
       await this.warrantyHistoriesRepository.findHistoriesBySellerId(sellerId);
-    histories.map((history) => {
-      return `Mahsulot kodi: ${history.product_code}; Haridor telefon raqami: ${history.phone}, Aktivlashtirgan sana: ${history.activated_at}`;
+    const str = histories.map((history) => {
+      return `\nMahsulot kodi: ${history.product_code}; \nHaridor telefon raqami: ${history.phone}; \nStatus: ${history.status}; \nAriza yaratilgan sana: ${this.formatDate(history.created_at)}; ${history.activated_at ? `\nAktivlashtirgan sana: ${history.activated_at};` : ''}`;
     });
+    return str.join('\n');
+  }
 
-    return histories.join('\n');
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   }
 }

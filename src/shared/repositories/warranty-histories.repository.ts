@@ -22,6 +22,10 @@ export class WarrantyHistoriesRepository {
         'products.code as product_code',
         'warranty_histories.phone',
         'warranty_histories.activated_at',
+        'warranty_histories.status',
+        'warranty_histories.created_at',
+        'warranty_histories.id',
+        'warranty_histories.activated_at',
       )
       .leftJoin('products', 'warranty_histories.product_id', 'products.id')
       .where({ 'warranty_histories.seller_id': seller_id });

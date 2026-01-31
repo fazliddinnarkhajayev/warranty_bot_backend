@@ -5,8 +5,7 @@ import { SellersRepository } from './sellers.repository';
 
 @Injectable()
 export class SellersService {
-
-  constructor(private readonly repo: SellersRepository) { }
+  constructor(private readonly repo: SellersRepository) {}
 
   async create(dto: CreateSellerDto) {
     return this.repo.create(dto);
@@ -18,8 +17,22 @@ export class SellersService {
     return seller;
   }
 
-  async getAll(query: PaginationQueryDto) {
+  async getByPhone(phone: string) {
+    const user = await this.repo.findByPhone(phone);
+    return user;
+  }
 
+  async getByTelegramId(telegramId: string) {
+    const user = await this.repo.findByTelegramId(telegramId);
+    return user;
+  }
+
+  async setTelegramId(id: number, telegramId: string) {
+    const user = await this.repo.updateTelegramId(id, telegramId);
+    return user;
+  }
+
+  async getAll(query: PaginationQueryDto) {
     const { pageIndex = 1, pageSize = 10 } = query;
 
     const offset = (pageIndex - 1) * pageSize;

@@ -1,21 +1,24 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { Injectable } from '@nestjs/common';
+import { SellersService } from '../sellers/sellers.service';
 
 @Injectable()
 export class TelegramAuthService {
-  constructor(private usersService: UsersService) {}
+  constructor(private sellersService: SellersService) {}
 
   async loginByPhone(phone: string) {
-    const user = await this.usersService.getByPhone(phone);
+    const seller = await this.sellersService.getByPhone(phone);
 
-    if (!user) {
-      return { success: false };
-    }
-
-    return { success: true, user };
+    if (seller) return { success: true, user: { ...seller, role: 'seller' } };
+    return { success: false };
   }
 
   getUserBytelegramId(telegramId: string) {
-    return this.usersService.getByTelegramId(telegramId);
+    return this.sellersService.getByTelegramId(telegramId);
+  }
+
+  setTelegramId(id: number, telegramId: string, role: string) {
+    if (role === 'seller') {
+      return this.sellersService.setTelegramId(id, telegramId);
+    }
   }
 }

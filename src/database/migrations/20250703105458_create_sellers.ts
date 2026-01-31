@@ -7,9 +7,28 @@ export async function up(knex: Knex): Promise<void> {
     table.string('phone').notNullable();
     table.string('first_name').notNullable();
     table.string('last_name').notNullable();
-    table.integer('district_id').nullable().unsigned().references('id').inTable('districts').onDelete('SET NULL');
-    table.integer('region_id').nullable().unsigned().references('id').inTable('regions').onDelete('SET NULL');
-    table.integer('created_by').nullable().unsigned().references('id').inTable('users').onDelete('SET NULL');
+    table.string('telegram_id').notNullable();
+    table
+      .integer('district_id')
+      .nullable()
+      .unsigned()
+      .references('id')
+      .inTable('districts')
+      .onDelete('SET NULL');
+    table
+      .integer('region_id')
+      .nullable()
+      .unsigned()
+      .references('id')
+      .inTable('regions')
+      .onDelete('SET NULL');
+    table
+      .integer('created_by')
+      .nullable()
+      .unsigned()
+      .references('id')
+      .inTable('users')
+      .onDelete('SET NULL');
     table.timestamp('created_at').defaultTo(knex.fn.now());
   });
 }

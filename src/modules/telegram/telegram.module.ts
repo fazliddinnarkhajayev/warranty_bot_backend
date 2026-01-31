@@ -5,12 +5,14 @@ import { UsersModule } from '../users/users.module';
 import { ProductsModule } from '../products/products.module';
 import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-histories.repository';
 import { CustomersRepository } from 'src/shared/repositories/customers.repository';
+import { SellersModule } from '../sellers/sellers.module';
 
 @Module({
   imports: [
     UsersModule,
     ProductsModule,
-    UsersModule
+    UsersModule,
+    SellersModule
   ],
   providers: [
     TelegramService,
