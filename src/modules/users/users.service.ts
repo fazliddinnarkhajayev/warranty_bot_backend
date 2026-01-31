@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from 'src/modules/users/dto/create-users.dto';
 import { PaginationQueryDto } from 'src/shared/dto/pagination.dto';
 import { UsersRepository } from './users.repository';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -9,6 +10,9 @@ export class UsersService {
   constructor(private readonly repo: UsersRepository) { }
 
   async create(dto: CreateUserDto) {
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    dto.password = hashedPassword;
     return this.repo.create(dto);
   }
 
@@ -20,6 +24,11 @@ export class UsersService {
 
   async getByPhone(phone: string) {
     const user = await this.repo.findByPhone(phone);
+    return user;
+  }
+
+  async getByUsername(username: string) {
+    const user = await this.repo.findByUsername(username);
     return user;
   }
 

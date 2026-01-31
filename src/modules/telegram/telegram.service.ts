@@ -4,6 +4,7 @@ import { TelegramAuthService } from './telegram.auth.service';
 import { UsersService } from '../users/users.service';
 import { ProductsService } from '../products/products.service';
 import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-histories.repository';
+import { CustomersRepository } from 'src/shared/repositories/customers.repository';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
@@ -20,6 +21,9 @@ export class TelegramService implements OnModuleInit {
 
   @Inject()
   private readonly warrantyHistoriesRepository: WarrantyHistoriesRepository;
+
+  @Inject()
+  private readonly customersRepository: CustomersRepository;
 
   async onModuleInit() {
     this.initBot()
@@ -223,6 +227,7 @@ export class TelegramService implements OnModuleInit {
   private async handleConfirmStep(ctx: any) {
     const answer = ctx.message?.text?.toString().trim().toLowerCase();
     if (answer === 'ha') {
+      await this.createCustomerIfNotExists(ctx.session.warrantyData);
       await this.activateWarranty(
         ctx.session.warrantyData,
         ctx.session.user.id,
@@ -273,6 +278,13 @@ export class TelegramService implements OnModuleInit {
       phone: data.phone,
       seller_id: sellerId,
     });
+  }
+
+  private async createCustomerIfNotExists(data: { phone: string; productCode: string }) {
+    const customer = await this.customersRepository.findByPhone(data.phone);
+    if (!customer) {
+      await this.customersRepository.create({ phone: data.phone });
+    }
   }
 
   // -------------------- GET SELLER WARRANTY HISTORY --------------------

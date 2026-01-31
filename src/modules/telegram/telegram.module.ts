@@ -4,6 +4,7 @@ import { TelegramAuthService } from './telegram.auth.service';
 import { UsersModule } from '../users/users.module';
 import { ProductsModule } from '../products/products.module';
 import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-histories.repository';
+import { CustomersRepository } from 'src/shared/repositories/customers.repository';
 
 @Module({
   imports: [
@@ -12,9 +13,10 @@ import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-hi
     UsersModule
   ],
   providers: [
-    TelegramService, 
+    TelegramService,
     TelegramAuthService,
-    WarrantyHistoriesRepository
+    WarrantyHistoriesRepository,
+    CustomersRepository
   ]
 })
-export class TelegramModule {}
+export class TelegramModule { }

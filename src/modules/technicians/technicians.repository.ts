@@ -2,13 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { KnexService } from 'src/database/knex.service';
 
 @Injectable()
-export class SellersRepository {
+export class TechniciansRepository {
   constructor(private readonly knex: KnexService) { }
 
-  private table = 'sellers';
+  private table = 'technicians';
 
   async findAll(offset: number, limit: number) {
-    return this.knex.getClient()('sellers as s')
+    return this.knex.getClient()('technicians as s')
       .select([
         's.*',
         'd.name as district_name',

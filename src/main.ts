@@ -1,7 +1,8 @@
 import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './shared/filters/exception.filter';
+import { JwtGuard } from './shared/guards/jwt.guard';
 import { ResponseInterceptor } from './shared/interceptors/response.interceptor';
 
 async function bootstrap() {
@@ -10,6 +11,8 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
+
+  app.useGlobalGuards(new JwtGuard());
 
   app.enableCors('*')
 

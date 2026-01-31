@@ -3,7 +3,7 @@ import { KnexService } from 'src/database/knex.service';
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly knex: KnexService) {}
+  constructor(private readonly knex: KnexService) { }
 
   private table = 'users';
 
@@ -21,6 +21,11 @@ export class UsersRepository {
 
   async findByPhone(phone: string) {
     return this.knex.getClient()(this.table).where({ phone }).first();
+  }
+
+  async findByUsername(username: string) {
+    console.log({ username })
+    return this.knex.getClient()(this.table).where({ username }).first();
   }
 
   async findByTelegramId(telegramId: string) {
