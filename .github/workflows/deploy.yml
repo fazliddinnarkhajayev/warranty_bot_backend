@@ -74,3 +74,4 @@ EOF
 # 10. Cleanup key
 - name: Cleanup SSH key
   run: rm -f private_key.pem
+ 
