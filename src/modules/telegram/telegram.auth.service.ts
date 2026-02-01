@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { CustomersRepository } from 'src/shared/repositories/customers.repository';
 import { SellersService } from '../sellers/sellers.service';
+import { TechniciansService } from '../technicians/technicians.service';
 
 @Injectable()
 export class TelegramAuthService {
   constructor(
     private sellersService: SellersService,
-    private customersRepository: CustomersRepository
+    private customersRepository: CustomersRepository,
+    private techniciansService: TechniciansService
   ) { }
 
   async loginByPhone(phone: string) {
@@ -16,6 +18,10 @@ export class TelegramAuthService {
 
     const customer = await this.customersRepository.findByPhone(phone);
     if (customer) return { success: true, user: { ...customer, role: 'customer' } }
+
+    const tech = await this.techniciansService.getByPhone(phone);
+    if (tech) return { success: true, user: { ...tech, role: 'technician' } }
+
     return { success: false };
   }
 
@@ -28,6 +34,12 @@ export class TelegramAuthService {
     if (customer) {
       return { ...customer, role: 'customer' };
     }
+
+    const tech = await this.techniciansService.getByTelegramId(telegramId);
+    if (tech) {
+      return { ...tech, role: 'technician' }
+    }
+
     return null;
   }
 
@@ -36,6 +48,8 @@ export class TelegramAuthService {
       return this.sellersService.setTelegramId(id, telegramId);
     } else if (role === 'customer') {
       return this.customersRepository.setTelegramId(id, telegramId);
+    } else if (role === 'technician') {
+      return this.techniciansService.setTelegramId(id, telegramId);
     }
   }
 }

@@ -18,6 +18,18 @@ export class TechniciansService {
     return seller;
   }
 
+  async getByPhone(phone: string) {
+    return this.repo.findByPhone(phone);
+  }
+
+  async getByTelegramId(telegram_id: string) {
+    return this.repo.findByTelegramId(telegram_id);
+  }
+
+  async setTelegramId(id: number, telegram_id: string) {
+    return this.repo.setTelegramId(id, telegram_id);
+  }
+
   async getAll(query: PaginationQueryDto) {
 
     const { pageIndex = 1, pageSize = 10 } = query;

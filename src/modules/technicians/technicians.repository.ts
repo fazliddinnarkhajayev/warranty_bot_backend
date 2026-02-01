@@ -25,6 +25,21 @@ export class TechniciansRepository {
     return this.knex.getClient()(this.table).where({ id }).first();
   }
 
+  async findByPhone(phone: string) {
+    return this.knex.getClient()(this.table).where({ phone }).first();
+  }
+
+  async findByTelegramId(telegram_id: string) {
+    return this.knex.getClient()(this.table).where({ telegram_id }).first();
+  }
+
+  async setTelegramId(id: number, telegram_id: string) {
+    return this.knex.getClient()(this.table)
+      .where({ id })
+      .update({ telegram_id })
+      .returning('*');
+  }
+
   async create(data: any) {
     const [user] = await this.knex.getClient()(this.table)
       .insert(data)

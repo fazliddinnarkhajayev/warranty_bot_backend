@@ -5,6 +5,8 @@ import { UsersService } from '../users/users.service';
 import { ProductsService } from '../products/products.service';
 import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-histories.repository';
 import { CustomersRepository } from 'src/shared/repositories/customers.repository';
+import { ServicesLogsRepository } from 'src/shared/repositories/services-logs.repository';
+import { dot } from 'node:test/reporters';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
@@ -24,6 +26,9 @@ export class TelegramService implements OnModuleInit {
 
   @Inject()
   private readonly customersRepository: CustomersRepository;
+
+  @Inject()
+  private readonly servicesLogsRepository: ServicesLogsRepository
 
   async onModuleInit() {
     this.initBot()
@@ -84,6 +89,7 @@ export class TelegramService implements OnModuleInit {
       // -------------------- MESSAGE HANDLER (steps) --------------------
       this.bot.on('message', async (ctx) => {
         const step = ctx['session'].warrantyStep;
+        console.log({ step })
         if (!step) return;
         switch (step) {
           case 'phone':
@@ -94,6 +100,21 @@ export class TelegramService implements OnModuleInit {
             break;
           case 'confirm':
             await this.handleConfirmStep(ctx);
+            break;
+          case 'repairing_product_code':
+            await this.handleRepairingProductCode(ctx);
+            break;
+          case 'repairing_problem':
+            await this.handleRepairingProblem(ctx);
+            break;
+          case 'repairing_solution':
+            await this.handleRepairingSolution(ctx);
+            break;
+          case 'repairing_cost':
+            await this.handleRepairingPrice(ctx);
+            break;
+          case 'repairing_submit':
+            await this.handleRepairingConfirmStep(ctx);
             break;
           default:
             break;
@@ -171,6 +192,16 @@ export class TelegramService implements OnModuleInit {
             .text('ℹ️ Ma’lumot', 'customer_info'),
         });
         break;
+      case 'technician':
+        ctx.reply('📋 Texnik menyusi', {
+          reply_markup: new InlineKeyboard()
+            .text('🟢 Tamirlashni aktivlashtrish', 'technician_repairing_activation')
+            .row()
+            .text('📦 Tamirlar tarixi', 'technician_repairing_history')
+            .row()
+            .text('ℹ️ Ma’lumot', 'technician_info'),
+        });
+        break;
       default:
         ctx.reply('❌ Sizning rolingiz aniqlanmadi');
         break;
@@ -201,7 +232,6 @@ export class TelegramService implements OnModuleInit {
   // -------------------- CALLBACKS --------------------
   private async handleCallback(ctx: any) {
     const data = ctx.callbackQuery.data;
-    const user_role = ctx.session.user.role;
 
     if (data.split('_#').length == 1) {
 
@@ -212,6 +242,14 @@ export class TelegramService implements OnModuleInit {
           });
           await ctx.reply('📲 Iltimos, mijoz telefon raqamini kiriting:');
           ctx.session.warrantyStep = 'phone';
+          break;
+
+        case 'technician_repairing_activation':
+          await ctx.answerCallbackQuery({
+            text: 'Tamirlashni aktivlashtirish !',
+          });
+          await ctx.reply('Iltimos, Mahsulot code`ni kiriting');
+          ctx.session.warrantyStep = 'repairing_product_code';
           break;
 
         case 'customer_warranty_activation':
@@ -238,18 +276,33 @@ export class TelegramService implements OnModuleInit {
           await ctx.reply(`📦 Sizning kafolatlar tarixingiz:\n${customer_history}`);
           break;
 
+        case 'technician_repairing_history':
+          await ctx.answerCallbackQuery({ text: 'Kafolatlar tarixi' });
+          const technician_history = await this.getTechniciansRepairingHistory(
+            ctx.session.user.phone,
+          );
+          await ctx.reply(`📦 Sizning tamirlar tarixingiz:\n${technician_history}`);
+          break;
+
 
         case 'seller_info':
           await ctx.answerCallbackQuery({ text: 'Sotuvchi haqida' });
           await ctx.reply(
-            `ℹ️ Siz ${ctx.session.user.first_name} ${ctx.session.user.last_name} ${user_role == 'seller' ? 'sotuvchi' : 'foydalanuvchi'} sifatida tizimda ro‘yxatdan o‘tgan foydalanuvchisiz.`,
+            `ℹ️ Siz ${ctx.session.user.first_name} ${ctx.session.user.last_name} Sotuvchi sifatida tizimda ro‘yxatdan o‘tgan foydalanuvchisiz.`,
           );
           break;
 
         case 'customer_info':
           await ctx.answerCallbackQuery({ text: 'Haridor haqida' });
           await ctx.reply(
-            `ℹ️ Siz ${ctx.session.user.first_name} ${ctx.session.user.last_name} ${user_role == 'seller' ? 'sotuvchi' : user_role == 'customer' ? 'Haridor' : 'foydalanuvchi'} sifatida tizimda ro‘yxatdan o‘tgan foydalanuvchisiz.`,
+            `ℹ️ Siz ${ctx.session.user.first_name} ${ctx.session.user.last_name} Haridor sifatida tizimda ro‘yxatdan o‘tgan foydalanuvchisiz.`,
+          );
+          break;
+
+        case 'technician_info':
+          await ctx.answerCallbackQuery({ text: 'Texnik haqida' });
+          await ctx.reply(
+            `ℹ️ Siz ${ctx.session.user.first_name} ${ctx.session.user.last_name} Texnik sifatida tizimda ro‘yxatdan o‘tgan foydalanuvchisiz.`,
           );
           break;
 
@@ -358,6 +411,21 @@ export class TelegramService implements OnModuleInit {
     });
   }
 
+  private async createServiceToProduct(
+    data: any,
+    technician_id: number,
+  ) {
+    const dto = {
+      product_id: data.product_id,
+      problem: data.problem,
+      solution: data.solution,
+      price: data.price,
+      technician_id: technician_id,
+      is_warranty: data.is_warranty
+    }
+    await this.servicesLogsRepository.create(dto);
+  }
+
   private async createCustomerIfNotExists(data: { phone: string; productCode: string }) {
     const customer = await this.customersRepository.findByPhone(data.phone);
     if (!customer) {
@@ -382,6 +450,96 @@ export class TelegramService implements OnModuleInit {
       return `\nMahsulot kodi: ${history.product_code}; \nHaridor telefon raqami: ${history.phone}; \nStatus: ${history.status}; \nAriza yaratilgan sana: ${this.formatDate(history.created_at)}; ${history.activated_at ? `\nAktivlashtirgan sana: ${this.formatDate(history.activated_at)};` : ''} \n---------------------`;
     });
     return str.join('\n');
+  }
+
+  private async getTechniciansRepairingHistory(phone: string): Promise<string> {
+    const histories =
+      await this.servicesLogsRepository.findAllByTechnicianPhone(phone);
+    const str = histories.map((history) => {
+      return `\nMahsulot kodi: ${history.product_code}; \nHaridor telefon raqami: ${history.phone}; \nAriza yaratilgan sana: ${this.formatDate(history.created_at)};`;
+    });
+    return str.join('\n');
+  }
+
+  //   CREATING REPAIRING HANDLE PRODUCT CODE 
+  private async handleRepairingProductCode(ctx: any) {
+    const answer = ctx.message?.text?.toString().trim().toLowerCase();
+
+    const product = await this.productsService.getByCode(answer);
+    if (!product) {
+      await ctx.reply(
+        '❌ Bunday mahsulot kodi mavjud emas. Iltimos, qayta kiriting:',
+      );
+      return;
+    }
+    const warranty = await this.warrantyHistoriesRepository.findByProductId(product.id);
+    if (!warranty) {
+      await ctx.reply(
+        `Mahsulot: ${product.name} \nMahsulot uchun kafolat toplimadi`,
+      );
+
+      ctx.session.warrantyStep = 'repairing_problem';
+      ctx.session.warrantyData = { is_warranty: false, product_code: answer, product_id: product.id };
+    }
+    if (warranty) {
+      await ctx.reply(
+        `Mahsulot: ${product.name} \nMahsulot ${this.formatDate(warranty.activated_at)} gacha kafolatlangan`,
+      );
+      ctx.session.warrantyStep = 'repairing_problem';
+      ctx.session.warrantyData = { is_warranty: true, product_code: answer, product_id: product.id };
+    }
+    await ctx.reply('Iltimos muammoni yuboring !');
+
+  }
+
+  private async handleRepairingProblem(ctx: any) {
+    const answer = ctx.message?.text?.toString().trim().toLowerCase();
+
+    ctx.session.warrantyStep = 'repairing_solution';
+    ctx.session.warrantyData['problem'] = answer;
+    await ctx.reply('Iltimos yechimni yuboring !');
+
+  }
+
+  private async handleRepairingSolution(ctx: any) {
+    const answer = ctx.message?.text?.toString().trim().toLowerCase();
+
+    ctx.session.warrantyStep = 'repairing_cost';
+    ctx.session.warrantyData['solution'] = answer;
+    await ctx.reply('Iltimos hizmat narxini yuboring !');
+  }
+
+  private async handleRepairingPrice(ctx: any) {
+    const answer = ctx.message?.text?.toString().trim().toLowerCase();
+
+    ctx.session.warrantyStep = 'repairing_submit';
+    ctx.session.warrantyData['price'] = answer;
+    await ctx.reply(`Iltimos malumotlarni tasqidlang !
+    \nMahsulot kodi: ${ctx.session.warrantyData.product_code}
+    \nMahsulot kafolati: ${ctx.session.warrantyData.is_warranty ? 'bor' : ' yoq'}
+    \nMahsulot muammosi: ${ctx.session.warrantyData.problem}
+    \nMuammo yechimi: ${ctx.session.warrantyData.solution}
+    \nHismat narxi: ${ctx.session.warrantyData.price}`);
+    return await ctx.reply(`✅ Tasdiqlaysizmi? (ha/yo‘q)`);
+  }
+
+  private async handleRepairingConfirmStep(ctx: any) {
+    const answer = ctx.message?.text?.toString().trim().toLowerCase();
+    if (answer === 'ha') {
+      await this.createServiceToProduct(
+        ctx.session.warrantyData,
+        ctx.session.user.id,
+      );
+      await ctx.reply('🟢 Tamirlash muvaffaqiyatli yaratildi!');
+    } else if (answer === "yo'q" || answer === 'yo‘q' || answer === 'yoq') {
+      await ctx.reply('❌ Tamirlash yaratish bekor qilindi.');
+    } else {
+      return await ctx.reply(`✅ Tasdiqlaysizmi? (ha/yo‘q)`);
+    }
+
+    ctx.session.warrantyStep = null;
+    ctx.session.warrantyData = null;
+    return this.showMenu(ctx, 'technician');
   }
 
   formatDate(dateString: string): string {
