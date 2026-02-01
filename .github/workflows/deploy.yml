@@ -43,32 +43,34 @@ jobs:
       - name: Push Docker image
         run: docker push fazliddinwrest/warranty_backend:latest
 
-           # 8. Write SSH key
-      - name: Write SSH key
-        run: |
-          echo "${{ secrets.SERVER_SSH_KEY }}" > private_key.pem
-          chmod 600 private_key.pem
+     # 8. Write SSH key
+- name: Write SSH key
+  run: |
+    echo "${{ secrets.SERVER_SSH_KEY }}" > private_key.pem
+    chmod 600 private_key.pem
 
-      # 9. Deploy via SSH
-      - name: Deploy to server
-        run: |
-          ssh -i private_key.pem -o StrictHostKeyChecking=no \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+# 9. Deploy via SSH
+- name: Deploy to server
+  env:
+    DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+    DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  run: |
+    ssh -i private_key.pem -o StrictHostKeyChecking=no \
+    ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      docker pull fazliddinwrest/warranty_backend:latest
 
-            docker pull fazliddinwrest/warranty_backend:latest
+      docker stop warranty_backend || true
+      docker rm -f warranty_backend || true
 
-            docker stop warranty_backend || true
-            docker rm -f warranty_backend || true
+      docker run -d \
+        --name warranty_backend \
+        --restart unless-stopped \
+        -p 3000:3000 \
+        fazliddinwrest/warranty_backend:latest
+EOF
 
-            docker run -d \
-              --name warranty_backend \
-              --restart unless-stopped \
-              -p 3000:3000 \
-              fazliddinwrest/warranty_backend:latest
-          EOF
-
-      # 10. Cleanup key
-      - name: Cleanup SSH key
-        run: rm -f private_key.pem
+# 10. Cleanup key
+- name: Cleanup SSH key
+  run: rm -f private_key.pem
