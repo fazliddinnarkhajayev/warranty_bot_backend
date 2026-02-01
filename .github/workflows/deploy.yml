@@ -41,23 +41,21 @@ jobs:
 
       # 7. Push image
       - name: Push Docker image
-        run:
-          docker push fazliddinwrest/warranty_backend:latest
+        run: docker push fazliddinwrest/warranty_backend:latest
 
-          # 8. Write SSH key
-      - name: Write SSH key
-        run: |
-          echo "${{ secrets.SERVER_SSH_KEY }}" > private_key.pem
-          chmod 600 private_key.pem
+        # 9. Deploy via SSH with password
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      # 9. Deploy via SSH
       - name: Deploy to server
         env:
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          ssh -i private_key.pem -o StrictHostKeyChecking=no \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST << EOF
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
             docker pull fazliddinwrest/warranty_backend:latest
@@ -70,8 +68,4 @@ jobs:
               --restart unless-stopped \
               -p 3000:3000 \
               fazliddinwrest/warranty_backend:latest
-             EOF
-
-      # 10. Cleanup key
-      - name: Cleanup SSH key
-        run: rm -f private_key.pem
+          EOF
