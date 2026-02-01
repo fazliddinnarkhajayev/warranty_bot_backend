@@ -2,10 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { KnexService } from 'src/database/knex.service';
 
 @Injectable()
-export class UsersRepository {
+export class ServicesLogsRepository {
   constructor(private readonly knex: KnexService) { }
 
-  private table = 'users';
+  private table = 'services_logs';
 
   async findAll(offset: number, limit: number) {
     return this.knex
@@ -15,29 +15,39 @@ export class UsersRepository {
       .limit(limit);
   }
 
+  async findAllByTechnicianPhone(phone: string) {
+    return this.knex
+      .getClient()(this.table + ' as sl')
+      .select([
+        'sl.id',
+        'sl.problem',
+        'sl.solution',
+        'sl.is_warranty',
+        'sl.price',
+        'sl.created_at',
+
+        'p.id as product_id',
+        'p.name as product_name',
+        'p.code as product_code',
+
+        't.id as technician_id',
+        't.phone as technician_phone',
+      ])
+      .leftJoin('technicians as t', 't.id', 'sl.technician_id')
+      .leftJoin('products as p', 'p.id', 'sl.product_id')
+      .where('t.phone', phone)
+      .orderBy('sl.created_at', 'desc');
+  }
+
   async findById(id: number) {
     return this.knex.getClient()(this.table).where({ id }).first();
   }
 
-  async findByPhone(phone: string) {
-    return this.knex.getClient()(this.table).where({ phone }).first();
+  async findByProductId(id: number) {
+    return this.knex.getClient()(this.table).where({ product_id: id }).first();
   }
 
-  async findByUsername(username: string) {
-    console.log({ username })
-    return this.knex.getClient()(this.table).where({ username }).first();
-  }
-
-  async findByTelegramId(telegramId: string) {
-    return this.knex
-      .getClient()(this.table)
-      .where({ telegram_id: telegramId })
-      .first();
-  }
-
-  async create(
-    data: Partial<{ name: string; role: string; created_by: number }>,
-  ) {
+  async create(data: any) {
     const [user] = await this.knex
       .getClient()(this.table)
       .insert(data)
@@ -58,7 +68,7 @@ export class UsersRepository {
     return this.knex.getClient()(this.table).count('* as count');
   }
 
-  async update(id: number, data: { name?: string }) {
+  async update(id: number, data: any) {
     const [res] = await this.knex
       .getClient()(this.table)
       .where({ id })

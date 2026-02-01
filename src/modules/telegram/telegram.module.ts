@@ -4,19 +4,25 @@ import { TelegramAuthService } from './telegram.auth.service';
 import { UsersModule } from '../users/users.module';
 import { ProductsModule } from '../products/products.module';
 import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-histories.repository';
+import { CustomersRepository } from 'src/shared/repositories/customers.repository';
 import { SellersModule } from '../sellers/sellers.module';
+import { TechniciansModule } from '../technicians/technicians.module';
+import { ServicesLogsRepository } from 'src/shared/repositories/services-logs.repository';
 
 @Module({
   imports: [
     UsersModule,
     ProductsModule,
     UsersModule,
-    SellersModule
+    SellersModule,
+    TechniciansModule
   ],
   providers: [
-    TelegramService, 
+    TelegramService,
     TelegramAuthService,
-    WarrantyHistoriesRepository
+    WarrantyHistoriesRepository,
+    CustomersRepository,
+    ServicesLogsRepository
   ]
 })
-export class TelegramModule {}
+export class TelegramModule { }

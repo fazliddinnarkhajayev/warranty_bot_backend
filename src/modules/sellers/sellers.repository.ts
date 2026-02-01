@@ -3,17 +3,23 @@ import { KnexService } from 'src/database/knex.service';
 
 @Injectable()
 export class SellersRepository {
-  constructor(private readonly knex: KnexService) {}
+  constructor(private readonly knex: KnexService) { }
 
   private table = 'sellers';
 
   async findAll(offset: number, limit: number) {
-    return this.knex
-      .getClient()(this.table)
-      .select('*')
+    return this.knex.getClient()('sellers as s')
+      .select([
+        's.*',
+        'd.name as district_name',
+        'r.name as region_name',
+      ])
+      .leftJoin('districts as d', 'd.id', 's.district_id')
+      .leftJoin('regions as r', 'r.id', 's.region_id')
       .offset(offset)
       .limit(limit);
   }
+
 
   async findById(id: number) {
     return this.knex.getClient()(this.table).where({ id }).first();

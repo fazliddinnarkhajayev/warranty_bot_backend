@@ -9,6 +9,11 @@ import { RegionsModule } from './modules/regions/regions.module';
 import { DistrictsModule } from './modules/districts/districts.module';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { WarrantyHistoriesRepository } from './shared/repositories/warranty-histories.repository';
+import { AuthModule } from './modules/auth/auth.module';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { TechniciansModule } from './modules/technicians/technicians.module';
+import { CustomersRepository } from './shared/repositories/customers.repository';
 
 @Module({
   imports: [
@@ -18,9 +23,15 @@ import { WarrantyHistoriesRepository } from './shared/repositories/warranty-hist
     ProductsModule,
     RegionsModule,
     DistrictsModule,
-    TelegramModule
+    TelegramModule,
+    AuthModule,
+    TechniciansModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    JwtModule.register({
+      secret: 'superStrongSecret123',
+    }),
   ],
   controllers: [AppController],
-  providers: [AppService, WarrantyHistoriesRepository],
+  providers: [AppService, WarrantyHistoriesRepository, CustomersRepository],
 })
 export class AppModule { }

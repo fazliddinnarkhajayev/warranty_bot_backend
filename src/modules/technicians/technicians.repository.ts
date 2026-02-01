@@ -2,18 +2,24 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { KnexService } from 'src/database/knex.service';
 
 @Injectable()
-export class UsersRepository {
+export class TechniciansRepository {
   constructor(private readonly knex: KnexService) { }
 
-  private table = 'users';
+  private table = 'technicians';
 
   async findAll(offset: number, limit: number) {
-    return this.knex
-      .getClient()(this.table)
-      .select('*')
+    return this.knex.getClient()('technicians as s')
+      .select([
+        's.*',
+        'd.name as district_name',
+        'r.name as region_name',
+      ])
+      .leftJoin('districts as d', 'd.id', 's.district_id')
+      .leftJoin('regions as r', 'r.id', 's.region_id')
       .offset(offset)
       .limit(limit);
   }
+
 
   async findById(id: number) {
     return this.knex.getClient()(this.table).where({ id }).first();
@@ -23,30 +29,28 @@ export class UsersRepository {
     return this.knex.getClient()(this.table).where({ phone }).first();
   }
 
-  async findByUsername(username: string) {
-    console.log({ username })
-    return this.knex.getClient()(this.table).where({ username }).first();
+  async findByTelegramId(telegram_id: string) {
+    return this.knex.getClient()(this.table).where({ telegram_id }).first();
   }
 
-  async findByTelegramId(telegramId: string) {
-    return this.knex
-      .getClient()(this.table)
-      .where({ telegram_id: telegramId })
-      .first();
+  async setTelegramId(id: number, telegram_id: string) {
+    return this.knex.getClient()(this.table)
+      .where({ id })
+      .update({ telegram_id })
+      .returning('*');
   }
 
-  async create(
-    data: Partial<{ name: string; role: string; created_by: number }>,
-  ) {
-    const [user] = await this.knex
-      .getClient()(this.table)
+  async create(data: any) {
+    const [user] = await this.knex.getClient()(this.table)
       .insert(data)
       .returning('*');
     return user;
   }
 
   async deleteById(id: number) {
-    const data = await this.knex.getClient()(this.table).where({ id }).first();
+    const data = await this.knex.getClient()(this.table)
+      .where({ id })
+      .first();
 
     if (!data) {
       throw new NotFoundException(`Data not found`);
@@ -59,8 +63,7 @@ export class UsersRepository {
   }
 
   async update(id: number, data: { name?: string }) {
-    const [res] = await this.knex
-      .getClient()(this.table)
+    const [res] = await this.knex.getClient()(this.table)
       .where({ id })
       .update(data)
       .returning('*');
