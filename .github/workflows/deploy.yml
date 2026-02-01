@@ -31,7 +31,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t fazliddinwrest/warranty_backend:latest .
+        run: docker build -t fazliddinwrest/warranty_backend:latest ../../
 
       - name: Push Docker image
         run: docker push fazliddinwrest/warranty_backend:latest
