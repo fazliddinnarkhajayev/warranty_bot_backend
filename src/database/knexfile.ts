@@ -4,11 +4,11 @@ const config: { [key: string]: Knex.Config } = {
   development: {
     client: 'pg',
     connection: {
-      host: 'localhost',
+      host: '167.86.94.200',
       port: 5432,
       user: 'postgres',
-      password: '2000',
-      database: 'warranty_bot',
+      password: 'postgres',
+      database: 'test_db',
     },
     migrations: {
       directory: './migrations',

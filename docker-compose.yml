@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    container_name: warranty_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://user:pass@postgres:5432/test_db
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:17
+    container_name: warranty_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
