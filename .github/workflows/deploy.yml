@@ -10,41 +10,57 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Kodni olish
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. Node sozlash
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
+      # 3. Paketlar
       - name: Install dependencies
         run: npm ci
 
+      # 4. Build
       - name: Build project
         run: npm run build
 
+      # 5. DockerHub login
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # 6. Image build
       - name: Build Docker image
         run: docker build -t fazliddinwrest/warranty_backend:latest .
- 
+
+      # 7. Push
       - name: Push Docker image
         run: docker push fazliddinwrest/warranty_backend:latest
 
+      # 8. Serverga deploy
       - name: Deploy to server
-        uses: appleboy/ssh-action@v0.1.8
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
           script: |
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
             docker pull fazliddinwrest/warranty_backend:latest
+
             docker stop warranty_backend || true
-            docker rm warranty_backend || true
-            docker run -d --name warranty_backend -p 3000:3000 fazliddinwrest/warranty_backend:latest
+            docker rm -f warranty_backend || true
+
+            docker run -d \
+              --name warranty_backend \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              fazliddinwrest/warranty_backend:latest
