@@ -8,7 +8,7 @@ const config: { [key: string]: Knex.Config } = {
       port: 5432,
       user: 'postgres',
       password: 'postgres',
-      database: 'test_db',
+      database: 'postgres',
     },
     migrations: {
       directory: './migrations',
