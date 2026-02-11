@@ -14,6 +14,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TechniciansModule } from './modules/technicians/technicians.module';
 import { CustomersRepository } from './shared/repositories/customers.repository';
+import { MobileModule } from './modules/mobile/mobile.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CustomersRepository } from './shared/repositories/customers.repository'
     JwtModule.register({
       secret: 'superStrongSecret123',
     }),
+    MobileModule,
   ],
   controllers: [AppController],
   providers: [AppService, WarrantyHistoriesRepository, CustomersRepository],

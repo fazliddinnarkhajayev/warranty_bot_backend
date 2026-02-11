@@ -23,6 +23,23 @@ import { ServicesLogsRepository } from 'src/shared/repositories/services-logs.re
     WarrantyHistoriesRepository,
     CustomersRepository,
     ServicesLogsRepository
+  ],
+  exports: [
+    TelegramService,
+    TelegramAuthService,
+    UsersModule,
+    ProductsModule,
+    UsersModule,
+    SellersModule,
+    TechniciansModule,
+    UsersModule,
+    ProductsModule,
+    UsersModule,
+    SellersModule,
+    TechniciansModule,
+    WarrantyHistoriesRepository,
+    CustomersRepository,
+    ServicesLogsRepository
   ]
 })
 export class TelegramModule { }

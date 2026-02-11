@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CustomersRepository } from 'src/shared/repositories/customers.repository';
 import { SellersService } from '../sellers/sellers.service';
 import { TechniciansService } from '../technicians/technicians.service';
@@ -51,5 +51,20 @@ export class TelegramAuthService {
     } else if (role === 'technician') {
       return this.techniciansService.setTelegramId(id, telegramId);
     }
+  }
+
+  createTelegramUser(data: any) {
+    if (data.role == 'seller') {
+      delete data.role;
+      return this.sellersService.create(data);
+    } else if (data.role == 'customer') {
+      delete data.role;
+      return this.customersRepository.create(data)
+    } else if (data.role == 'technician') {
+      delete data.role;
+      return this.techniciansService.create(data);
+    }
+    throw new InternalServerErrorException()
+
   }
 }

@@ -19,4 +19,14 @@ export class AuthController {
     return user;
   }
 
+  @Post('mobile/telegram/session')
+  telegramSessionByPhone(@Body() body: { phone: string }) {
+    return this.authService.telegramSessionByPhone(body.phone);
+  }
+
+  @Post('mobile/telegram/register')
+  registerTelegramUser(@Body() body: any) {
+    return this.authService.registerTelegramUser(body);
+  }
+
 }
