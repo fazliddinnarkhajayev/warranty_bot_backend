@@ -7,7 +7,7 @@ const config: { [key: string]: Knex.Config } = {
       host: '167.86.94.200',
       port: 5432,
       user: 'postgres',
-      password: 'postgres',
+      password: '_postgres',
       database: 'test_db',
     },
     migrations: {
