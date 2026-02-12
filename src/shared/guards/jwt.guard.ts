@@ -7,7 +7,7 @@ export class JwtGuard implements CanActivate {
     const req = context.switchToHttp().getRequest();
     const authHeader = req.headers['authorization'];
 
-    if (req.url.includes('login')) return true
+    if (req.url.includes('login') || req.url.includes('auth/mobile')) return true
 
     if (!authHeader) throw new UnauthorizedException('Token required');
 
