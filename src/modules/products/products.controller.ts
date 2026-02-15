@@ -17,6 +17,11 @@ export class ProductsController {
     return this.service.getById(+id);
   }
 
+  @Get('code/:code')
+  findOneByCode(@Param('code') code: string) {
+    return this.service.getByCode(code);
+  }
+
   @Get()
   findAll(@Query() query: PaginationQueryDto) {
     return this.service.getAll(query);

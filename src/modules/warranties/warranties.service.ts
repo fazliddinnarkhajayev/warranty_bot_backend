@@ -1,24 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationQueryDto } from 'src/shared/dto/pagination.dto';
-import { CreateProductDto } from './dto/create-products.dto';
-import { ProductsRepository } from './products.repository';
+import { WarrantyHistoriesRepository } from 'src/shared/repositories/warranty-histories.repository';
 
 @Injectable()
-export class ProductsService {
-  constructor(private readonly repo: ProductsRepository) { }
+export class WarrantiesService {
+  constructor(private readonly repo: WarrantyHistoriesRepository) { }
 
-  async create(dto: CreateProductDto) {
+  async create(dto: any) {
     return this.repo.create(dto);
   }
 
   async getById(id: number) {
     const data = await this.repo.findById(id);
-    if (!data) throw new NotFoundException('Product not found');
+    if (!data) throw new NotFoundException('Warranty not found');
     return data;
-  }
-
-  async getByCode(code: string) {
-    return await this.repo.findByCode(code);
   }
 
   async getAll(query: PaginationQueryDto) {
@@ -44,7 +39,8 @@ export class ProductsService {
 
   async delete(id: number) {
     const exists = await this.repo.findById(id);
-    if (!exists) throw new NotFoundException('Seller not found');
+    if (!exists) throw new NotFoundException('Warranty not found');
     return this.repo.deleteById(id);
   }
 }
+

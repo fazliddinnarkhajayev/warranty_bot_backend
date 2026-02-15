@@ -15,6 +15,8 @@ import { PassportModule } from '@nestjs/passport';
 import { TechniciansModule } from './modules/technicians/technicians.module';
 import { CustomersRepository } from './shared/repositories/customers.repository';
 import { MobileModule } from './modules/mobile/mobile.module';
+import { WarrantiesModule } from './modules/warranties/warranties.module';
+import { ServicesModule } from './modules/services/services.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { MobileModule } from './modules/mobile/mobile.module';
       secret: 'superStrongSecret123',
     }),
     MobileModule,
+    WarrantiesModule,
+    ServicesModule,
   ],
   controllers: [AppController],
   providers: [AppService, WarrantyHistoriesRepository, CustomersRepository],
